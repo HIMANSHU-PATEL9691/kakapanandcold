@@ -44,7 +44,7 @@ export default function Footer() {
       {/* CSS directly in same component */}
       <style jsx="true">{`
         .footer {
-          background: linear-gradient(90deg, #ff9a9e, #fad0c4);
+           background: linear-gradient(90deg, #43CEA2, #185A9D);
           color: #fff;
           padding: 40px 20px 20px;
           font-family: 'Poppins', sans-serif;

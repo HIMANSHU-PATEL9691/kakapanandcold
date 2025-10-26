@@ -30,12 +30,24 @@ const initialProducts = [
 
 const categories = ['All', ...new Set(initialProducts.map(p => p.category))];
 
+// --- New Notification Component ---
+const Notification = ({ message, isVisible }) => (
+  <div className={`notification ${isVisible ? 'show' : ''}`}>
+    {message}
+  </div>
+);
+// ---------------------------------
+
 export default function Products({ cartItems, setCartItems }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  // New state for notification message and visibility
+  const [notification, setNotification] = useState({ message: '', isVisible: false });
 
   const handleAddToCart = (product) => {
     const existingItem = cartItems.find(item => item.id === product.id);
+    
+    // 1. Update Cart Logic
     if (existingItem) {
       setCartItems(cartItems.map(item => 
         item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
@@ -43,6 +55,15 @@ export default function Products({ cartItems, setCartItems }) {
     } else {
       setCartItems([...cartItems, { ...product, quantity: 1 }]);
     }
+    
+    // 2. Show Notification
+    const message = `"${product.name}" added to cart! 🛒`;
+    setNotification({ message, isVisible: true });
+
+    // 3. Hide Notification after 3 seconds
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, isVisible: false }));
+    }, 3000);
   };
 
   const filteredProducts = useMemo(() => {
@@ -55,63 +76,72 @@ export default function Products({ cartItems, setCartItems }) {
   }, [searchTerm, selectedCategory]);
 
   return (
-    <div className="products-page container my-5">
-      <header className="shop-header">
-        <h2 className="title text-center mb-2">Sweet Bakery Catalog 🎂</h2>
-        <p className="subtitle text-center text-muted mb-4">
-          Cakes, breads, and pastries baked fresh every day. Find your favorites!
-        </p>
-        <div className="cart-summary">
-          <span className="cart-icon">🛒</span>
-          <span className="cart-text">Your Cart: <b>{cartItems.length} items</b></span>
-        </div>
-      </header>
-
-      <div className="category-tabs text-center mb-4">
-        {categories.map(category => (
-          <button
-            key={category}
-            className={`tab-btn ${selectedCategory === category ? 'active' : ''}`}
-            onClick={() => {
-              setSelectedCategory(category);
-              setSearchTerm('');
-            }}
-          >
-            {category}
-          </button>
-        ))}
-      </div>
-
-      <div className="search-bar text-center mb-5">
-        <input
-          type="text"
-          placeholder="Search for a cake, bread, or ingredient..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      <div className="product-grid">
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map(product => (
-            <ProductCard 
-              key={product.id} 
-              product={{ ...product, price: formatPrice(product.price) }} 
-              onAddToCart={() => handleAddToCart(product)}
-            />
-          ))
-        ) : (
-          <div className="no-products">
-            <p>😔 Sorry, no products match your search or filter.</p>
+    <>
+      <div className="products-page container my-5">
+        <header className="shop-header">
+          <h2 className="title text-center mb-2">Sweet Bakery Catalog 🎂</h2>
+          <p className="subtitle text-center text-muted mb-4">
+            Cakes, breads, and pastries baked fresh every day. Find your favorites!
+          </p>
+          <div className="cart-summary">
+            <span className="cart-icon">🛒</span>
+            <span className="cart-text">Your Cart: <b>{cartItems.reduce((acc, item) => acc + item.quantity, 0)} items</b></span>
           </div>
-        )}
+        </header>
+
+        <div className="category-tabs text-center mb-4">
+          {categories.map(category => (
+            <button
+              key={category}
+              className={`tab-btn ${selectedCategory === category ? 'active' : ''}`}
+              onClick={() => {
+                setSelectedCategory(category);
+                setSearchTerm('');
+              }}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        <div className="search-bar text-center mb-5">
+          <input
+            type="text"
+            placeholder="Search for a cake, bread, or ingredient..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="product-grid">
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map(product => (
+              <ProductCard 
+                key={product.id} 
+                product={{ ...product, price: formatPrice(product.price) }} 
+                onAddToCart={() => handleAddToCart(product)}
+              />
+            ))
+          ) : (
+            <div className="no-products">
+              <p>😔 Sorry, no products match your search or filter.</p>
+            </div>
+          )}
+        </div>
       </div>
+      
+      {/* Renders the notification */}
+      <Notification 
+        message={notification.message} 
+        isVisible={notification.isVisible} 
+      />
 
       {/* --- CSS --- */}
       <style jsx="true">{`
         :root {
           --primary-pink: #FF6B6B;
           --secondary-pink: #f8c3d0;
+          --success-green: #4CAF50; /* New color for success message */
           --text-dark: #333;
           --text-light: #fff;
           --bg-light: #fefefe;
@@ -146,6 +176,7 @@ export default function Products({ cartItems, setCartItems }) {
           top: 0;
           right: 0;
           padding: 8px 15px;
+          /* Important: Update cart count to show total quantity, not just unique items */
           background-color: var(--secondary-pink);
           color: var(--text-light);
           border-radius: 20px;
@@ -227,6 +258,30 @@ export default function Products({ cartItems, setCartItems }) {
           padding: 50px 0;
           font-size: 1.2rem;
         }
+        
+        /* --- Notification Styles (New) --- */
+        .notification {
+          position: fixed;
+          bottom: 30px;
+          right: 30px;
+          background-color: var(--success-green);
+          color: var(--text-light);
+          padding: 15px 25px;
+          border-radius: 8px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+          font-weight: 600;
+          z-index: 1000;
+          opacity: 0;
+          visibility: hidden;
+          transform: translateY(100%);
+          transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out, visibility 0.5s;
+        }
+
+        .notification.show {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+        }
 
         /* Responsive: tablets */
         @media (max-width: 992px) {
@@ -251,8 +306,19 @@ export default function Products({ cartItems, setCartItems }) {
           .category-tabs {
             gap: 10px;
           }
+          /* Adjust notification position for small screens */
+          .notification {
+            bottom: 20px;
+            right: 50%;
+            transform: translateX(50%) translateY(100%);
+            width: 90%;
+            text-align: center;
+          }
+          .notification.show {
+            transform: translateX(50%) translateY(0);
+          }
         }
       `}</style>
-    </div>
+    </>
   );
 }
